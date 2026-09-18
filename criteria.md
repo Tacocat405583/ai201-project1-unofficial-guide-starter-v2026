@@ -25,6 +25,13 @@ contains the answer.
 **Why this target:**
 <!-- e.g. "One of my questions is about a topic only two documents mention, so
      I expect that one to be hard." -->
+I picked 4 of 5 rather than 5 because three of my questions have their answer
+in a reply that never uses the question's words (the meal plan deadline reply
+never says "meal plan", the counselling reply never says "sleep", and the
+library hours are an aside in a thread about sleep), and when I tested
+parking, a reply like that didn't make the top 5. I didn't go down to 3 of 5
+because each of those facts is stated plainly in one reply, so a chunker that
+keeps each reply's thread question should reach at least two of the three.
 
 ---
 
@@ -35,6 +42,11 @@ Every answer the system produces names at least one source document.
 **Why this target:**
 <!-- Why all five and not four? What about your setup makes that achievable —
      or what would have to go wrong for it not to be? -->
+All five, because naming a source doesn't depend on retrieval being good: every
+chunk carries its file name, the prompt tells the model to cite, and `app.py`
+prints a "Sources retrieved" line from the code itself. The one way to miss it
+is the gate refusing one of my own questions, which prints the refusal and no
+sources, so a miss here would point at my cutoff rather than at the model.
 
 ---
 
@@ -52,6 +64,14 @@ in at least 4 of 5 tries.
 **Why this target:**
 <!-- What did your distances look like when you set the cutoff in Milestone 4?
      Was there a clean gap, or did the two groups overlap? -->
+Written before Milestone 4, so this is an expectation, not a measurement. I
+picked 4 of 5 rather than 5 because two of the out-of-scope questions sit
+near topics my threads do cover: ibuprofen for a headache is close to the
+sleep and counselling replies, and a Rust for loop is close to the laptop for
+CS thread, so one of them could land under the cutoff. I didn't go lower
+because the other three (Mongolia, diesel engines, the 1994 World Cup) have
+nothing to do with student life. I'll check this against the real distances
+when I set the cutoff.
 
 ---
 
@@ -64,7 +84,13 @@ from the chunk's text alone, without reading the chunk before or after it.
 
 
 **Why this target:**
-I picked 4 of 5 rather than 5 of 5 because my chunker produces some question-only chunks from each thread's THREAD line, and a chunk that's just a question can't stand on its own by nature. Requiring all five would penalize a structural feature of my corpus rather than measuring chunk size. Four of five keeps the majority standing alone while allowing for those question-only chunks
+I picked 4 of 5 rather than 5 because a few replies in my threads lean on the
+reply before them ("Adding:", "Both true"), and even with the thread question
+attached, those still read as half a conversation. I didn't go lower because
+most replies only fail to name their subject because the thread question is
+missing, which is something my chunker can fix. With the paragraph split I
+have right now, most sampled chunks are replies with no subject, so I expect
+this to miss until I change the chunker.
 
 
 

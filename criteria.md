@@ -75,7 +75,7 @@ when I set the cutoff.
 
 ---
 
-## 4. Something about your chunks
+## 4. Chunks name their own subject
 
 Of the 5 chunks printed by `python app.py chunks -n 5`, at least 4 name their
 own subject — a reader can tell what thread question the chunk is answering
@@ -96,7 +96,7 @@ this to miss until I change the chunker.
 
 ---
 
-## 5. Your choice
+## 5. Answers keep the disagreement between replies
 
 <!-- YOU WRITE THIS ONE TOO.
 
@@ -105,8 +105,6 @@ this to miss until I change the chunker.
      handles badly, about source attribution being correct rather than merely
      present — anything, as long as it names a number or an observable
      outcome. -->
-
-## 5. Answers keep the disagreement between replies
 
 For the 2 of my 5 test questions whose threads contain replies that qualify or
 contradict each other, the answer names the condition the replies disagree

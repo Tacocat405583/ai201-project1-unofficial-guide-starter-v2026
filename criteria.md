@@ -57,21 +57,14 @@ in at least 4 of 5 tries.
 
 ## 4. Something about your chunks
 
-<!-- YOU WRITE THIS ONE.
-
-     How would you know if your chunks were the right size? Name something
-     countable or observable.
-
-     Examples of the right shape — don't copy these, they should come from
-     what you actually saw in Milestone 3:
-       - "At least 4 of 5 sampled chunks read as a complete thought, with no
-          sentence cut in half at either end."
-       - "No chunk is shorter than 200 characters, since anything below that
-          in my corpus turned out to be a heading with no content under it." -->
+Of the 5 chunks printed by `python app.py chunks -n 5`, at least 4 name their
+own subject — a reader can tell what thread question the chunk is answering
+from the chunk's text alone, without reading the chunk before or after it.
 
 
 
 **Why this target:**
+I picked 4 of 5 rather than 5 of 5 because my chunker produces some question-only chunks from each thread's THREAD line, and a chunk that's just a question can't stand on its own by nature. Requiring all five would penalize a structural feature of my corpus rather than measuring chunk size. Four of five keeps the majority standing alone while allowing for those question-only chunks
 
 
 
@@ -87,9 +80,26 @@ in at least 4 of 5 tries.
      present — anything, as long as it names a number or an observable
      outcome. -->
 
+## 5. Answers keep the disagreement between replies
 
+For the 2 of my 5 test questions whose threads contain replies that qualify or
+contradict each other, the answer names the condition the replies disagree
+about rather than presenting one reply as settled fact. Both of the 2 have to
+do this.
 
 **Why this target:**
+Only two of my five questions land on threads where the replies disagree:
+laundry timing, where reply 1 says Tuesday and Wednesday mornings in every
+building and reply 2 says it depends which building you're in, and meal plan
+tiers, where reply 1 says get the middle tier unless your building has a
+kitchen and reply 2 says the highest tier almost never makes sense. The other
+three threads have replies that add to each other instead of arguing. So the
+number is 2 because that's how many cases exist, not because 2 felt safe, and
+I require both rather than 1 of 2 because with only two cases a target of 1
+would pass on a coin flip. I'm measuring whether the answer names the
+condition — the building, or whether you have a kitchen — because that's the
+thing the replies actually disagree about, and it's something I can look for
+in the text rather than having to judge how balanced an answer feels.
 
 
 

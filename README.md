@@ -38,6 +38,11 @@ with each other. The system answers practical "how does this work" or
 - "What happens if I hand in an assignment late?"
 - "How do I deal with a roommate who has guests over late?"
 
+**Chunk count** from `python app.py --corpus advice_threads chunks -n 1`:
+
+- Starter chunker (`chunker.py::fallback_split`, 800-character windows): **26** chunks
+- My paragraph split (`chunker.py::split_documents`): **98** chunks
+
 ## Chunking Strategy
 
 **Chunk size:**

@@ -21,13 +21,18 @@ Swap them for your own if you like. Keep five of them either way: criterion 3
 names a target of "4 of 5", and four of three is not a thing.
 """
 
+# Scoring rule, decided now, before any results: an answer counts as correct if
+# it contains the `expects` string, compared in lowercase. Where a number could
+# be written as digits or a word, `expects` holds the digits, since an answer
+# that gives the number spelled out still has to name the same fact and I'd
+# rather judge that case by reading it than have the scorer pass it silently.
 QUESTIONS = [
     # {"question": "...", "expects": "..."},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
+    {"question": "How much do commuter lockers cost?", "expects": "20"},
+    {"question": "Which mornings is dorm laundry free?", "expects": "tuesday"},
+    {"question": "When can you change your meal plan?", "expects": "ten days"},
+    {"question": "How late is the library open?", "expects": "2am"},
+    {"question": "How many sessions is the counselling sleep workshop?", "expects": "four"},
 ]
 
 # Questions from a different world entirely. Your gate should refuse all five.

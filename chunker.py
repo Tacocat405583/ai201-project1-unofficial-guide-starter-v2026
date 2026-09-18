@@ -97,21 +97,29 @@ def split_documents(documents: list[Document]) -> list[Chunk]:
       - Would splitting on paragraph breaks keep more thoughts intact than
         splitting on a character count?
     """
+    # advice_threads files are a "THREAD: <question>" paragraph followed by one
+    # paragraph per reply. A reply on its own doesn't say what it's answering,
+    # so every chunk is one reply with the thread question attached. The
+    # question never becomes a chunk by itself.
     chunks: list[Chunk] = []
     for doc in documents:
-        index = 0
-        for paragraph in doc.text.split("\n\n"):
-            piece = paragraph.strip()
-            if piece:
-                chunks.append(
-                    Chunk(
-                        text=piece,
-                        source=doc.source,
-                        index=index,
-                        produced_by="chunker.py::split_documents",
-                    )
+        paragraphs = [p.strip() for p in doc.text.split("\n\n") if p.strip()]
+        if not paragraphs:
+            continue
+
+        question, replies = paragraphs[0], paragraphs[1:]
+        if not replies:
+            replies = [""]   # nothing but a question: keep it as one chunk
+
+        for index, reply in enumerate(replies):
+            chunks.append(
+                Chunk(
+                    text=f"{question}\n{reply}".strip(),
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
                 )
-                index += 1
+            )
 
     return chunks
 

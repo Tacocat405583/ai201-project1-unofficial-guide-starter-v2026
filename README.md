@@ -38,65 +38,96 @@ with each other. The system answers practical "how does this work" or
 - "What happens if I hand in an assignment late?"
 - "How do I deal with a roommate who has guests over late?"
 
-**Chunk count** from `python app.py --corpus advice_threads chunks -n 1`:
-
-- Starter chunker (`chunker.py::fallback_split`, 800-character windows): **26** chunks
-- My paragraph split (`chunker.py::split_documents`): **98** chunks
-
 ## Chunking Strategy
 
-**Chunk size:**
-**Overlap:**
+**Chunk size:** one reply plus its thread question — 131 to 280 characters on
+this corpus (201 on average), 75 chunks in total. There's no character count in
+the code; the size comes from the structure of the threads.
 
-<!-- What about YOUR documents made you pick these numbers? Short posts and
-     long sectioned guides don't want the same chunking, and "800 seemed
-     reasonable" earns nothing. Point at something you noticed when you read
-     the documents in Milestone 1.
+**Overlap:** 0. Every chunk repeats its thread question instead, which does the
+job overlap normally does: it carries the context a reply needs to make sense.
 
-     If you changed your mind partway through, say so and say why. That's worth
-     more than pretending you got it right first time.
+Each `advice_threads` file is a `THREAD: <question>` line followed by 3–5
+replies separated by blank lines. When I measured them, the replies were
+95–222 characters (median 144) and the thread questions 35–68. No reply comes
+close to 800 characters, so there is never a reason to cut inside one. The
+problem with these documents isn't length, it's that a reply on its own
+usually doesn't say what it's about: "Street parking on Verrill is legal and
+free and unmarked" never mentions a permit, and "Two you actually turn up to
+beats six you signed up for at the fair" never mentions clubs. So
+`split_documents` keeps each reply whole and puts the thread question in front
+of it, and the question is never a chunk by itself.
 
-     Milestone 3. -->
+I didn't get here first time. Three versions, measured with `python app.py index`
+and `python app.py chunks`:
+
+| Version | Chunks | Shortest | Longest | What went wrong |
+|---|---|---|---|---|
+| Starter, `fallback_split` (800 chars, 120 overlap) | 26 | 2 | 793 | Most threads stayed whole in one chunk; the few that got cut were cut mid-sentence, leaving a 2-character fragment |
+| Paragraph split (first try) | 98 | 35 | 222 | Every thread question became its own chunk with no answer in it, and the replies lost their subject. 0 of 5 sampled chunks stood on their own |
+| Reply + thread question (final) | 75 | 131 | 280 | — |
+
+The paragraph split's problem showed up in retrieval. For
+`python app.py retrieve "is a parking permit worth it"`:
+
+| | Paragraph split | Reply + thread question |
+|---|---|---|
+| #1 result | the question-only chunk, distance 0.111, no answer in it | parking reply 3, 0.280 |
+| Parking replies in the top 5 | 2 of 3 — reply 1 missing | all 3, at #1–#3 |
+
+The best distance got worse, but the old best match was a chunk with nothing
+in it to answer from. Now every top result contains an answer.
+
+I considered a 125-character minimum instead, but 16 of the 75 replies are
+under 125 and they're complete thoughts — one of them, "The library being open
+until 2am is a trap", is the answer to one of my test questions. A minimum
+would have dropped it or merged it with an unrelated reply. I also considered
+keeping each thread whole (23 chunks), which would keep disagreeing replies
+together but make every chunk cover several ideas at once. That's the
+alternative I'd try if my disagreement criterion (5) fails.
 
 ## Sample Chunks
 
-<!-- Five chunks, pasted as text. Label each one and name the file it came from
-     AND the function that produced it — the grader checks your code against
-     what you claim here.
+From `python app.py chunks -n 5`.
 
-     `python app.py chunks -n 5` prints all three for you. Copy them straight
-     across.
-
-     Milestone 3. -->
-
-**Chunk 1** — source: `— produced by:`
+**Chunk 1** — source: `thread_bike_commute.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
-
+THREAD: Is a bike worth it for a 20 minute walk commute?
+--- reply 1 (14 votes) ---
+Yeah. Cuts an 18 minute walk to about 6. The thing nobody mentions is storage — covered bike parking exists at three buildings and is full by 9am at all three.
 ```
 
-**Chunk 2** — source: `— produced by:`
+**Chunk 2** — source: `thread_first_gen.txt#1` — produced by: `chunker.py::split_documents`
 
 ```
-
+THREAD: Anything specific for first-generation students?
+--- reply 2 (41 votes) ---
+The thing I'd say: the unwritten rules are the hard part, not the coursework. Ask about the unwritten rules explicitly. People are happy to explain them and nobody volunteers them.
 ```
 
-**Chunk 3** — source: `— produced by:`
+**Chunk 3** — source: `thread_laptop_specs.txt#2` — produced by: `chunker.py::split_documents`
 
 ```
-
+THREAD: How much laptop do I actually need for CS courses?
+--- reply 3 (12 votes) ---
+I did two years on an 8GB machine and it was fine until the last project, at which point it very much wasn't. 16 is the answer.
 ```
 
-**Chunk 4** — source: `— produced by:`
+**Chunk 4** — source: `thread_parking.txt#1` — produced by: `chunker.py::split_documents`
 
 ```
-
+THREAD: Worth getting a parking permit?
+--- reply 2 (21 votes) ---
+Street parking on Verrill is legal and free and unmarked, which is why half the upper years do it.
 ```
 
-**Chunk 5** — source: `— produced by:`
+**Chunk 5** — source: `thread_sleep_schedule.txt#1` — produced by: `chunker.py::split_documents`
 
 ```
-
+THREAD: Everyone says fix your sleep. Does it actually matter?
+--- reply 2 (37 votes) ---
+The library being open until 2am is a trap. It's a resource, not a schedule.
 ```
 
 ## Sample Answer

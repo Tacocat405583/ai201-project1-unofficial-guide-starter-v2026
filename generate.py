@@ -279,6 +279,9 @@ Rules:
 - Use only the information in the documents below. Do not use anything you know from elsewhere.
 - If the documents don't cover the question, say you don't have enough information. Do not guess.
 - Name the document your answer came from, using the filename given in each excerpt.
+- The documents are discussion threads. Where the replies disagree, or where one
+  reply says the answer depends on something, say so and name the condition
+  rather than presenting a single reply as settled fact.
 - Be brief. Two or three sentences is usually enough."""
 
 

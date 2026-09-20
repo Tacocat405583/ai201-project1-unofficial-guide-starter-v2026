@@ -132,31 +132,59 @@ The library being open until 2am is a trap. It's a resource, not a schedule.
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
-
-**Question:**
+**Question:** Which mornings is dorm laundry free?
 
 **Answer:**
 
 ```
+$ python app.py ask "Which mornings is dorm laundry free?"
+  (best distance 0.204, cutoff 0.5)
 
+According to `thread_laundry_timing.txt`, dorm laundry is free on Tuesday and
+Wednesday mornings in every building (reply 1). However, reply 2 notes that
+whether this is a problem depends heavily on your building, since Morrow has
+more machines per person than Fenwick.
+
+Sources retrieved: thread_laundry_timing.txt, thread_roommate_conflict.txt, thread_sleep_schedule.txt
 ```
 
-**My relevance cutoff:**
+I tightened the grounding instruction in `generate.py` to get that second
+sentence. With the starter's rules the same question answered "Dorm laundry is
+free on Tuesday and Wednesday mornings in every building." — true to reply 1,
+but it dropped reply 2 entirely and stated a contested claim as settled. My
+documents are discussion threads where people disagree, so I added a rule:
+where the replies disagree, or where one says the answer depends on something,
+name the condition instead of presenting one reply as fact. That's criterion 5,
+and the default prompt was failing it.
 
-<!-- The number you set in config.py, and how you got there.
+**My relevance cutoff:** 0.5
 
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
+I ran all five of my test questions and all five in `OUT_OF_SCOPE` through
+`python app.py retrieve` and wrote down the best distance for each. The two
+groups didn't overlap: everything my corpus covers came back between 0.204 and
+0.383, and everything it doesn't between 0.808 and 0.896, leaving an empty band
+0.42 wide between them.
 
-     Milestone 4. -->
+The starter's 0.6 sits almost exactly at the midpoint of that band (0.595), so
+it would have worked. I put the cutoff at the low end of the gap instead,
+because my five out-of-corpus questions are *obviously* unrelated to student
+life — a question that was merely off-topic, about some other university,
+would land much nearer my corpus than a diesel engine does, and 0.6 would let
+it through. At 0.5 the gate still clears my worst real question (the library
+one, 0.383) by 0.12, and all ten questions land on the correct side.
 
 | Question | In corpus? | Best distance |
-| -------- | ---------- | ------------- |
-|          |            |               |
+|---|---|---|
+| Which mornings is dorm laundry free? | yes | 0.2037 |
+| When can you change your meal plan? | yes | 0.2142 |
+| How many sessions is the counselling sleep workshop? | yes | 0.3419 |
+| How much do commuter lockers cost? | yes | 0.3492 |
+| How late is the library open? | yes | 0.3829 |
+| What is the recommended dosage of ibuprofen for a headache? | no | 0.8075 |
+| How do I write a for loop in Rust? | no | 0.8348 |
+| Who won the 1994 World Cup? | no | 0.8934 |
+| What is the capital of Mongolia? | no | 0.8935 |
+| How do I change the oil in a diesel engine? | no | 0.8964 |
 
 ## How I Used AI
 

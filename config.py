@@ -43,6 +43,13 @@ TOP_K = 5               # how many chunks to pull back per question
 # 0.6 is a reasonable starting point, not a right answer. Milestone 4 has you
 # measure your own two groups of distances and put the cutoff in the gap.
 # Most corpora land somewhere between 0.45 and 0.75.
+#
+# Measured on advice_threads: my five test questions best-match at 0.204–0.383,
+# the five OUT_OF_SCOPE ones at 0.808–0.896, so the gap runs 0.383 to 0.808.
+# I put the cutoff at the low end of that gap rather than the middle: my five
+# out-of-corpus questions are obviously unrelated, and a question that's merely
+# off-topic would land nearer my corpus than they did. 0.5 still leaves 0.12 of
+# room above my worst real question, and all ten land on the right side of it.
 THRESHOLD = 0.5
 
 

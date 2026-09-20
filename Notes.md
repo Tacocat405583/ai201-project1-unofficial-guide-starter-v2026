@@ -158,3 +158,12 @@ crossing 0.6, so all five should be refused rather than the 4 of 5 I targeted.
   distances underneath the cutoff. Mine already moved once: the parking
   question went from 0.111 under the paragraph split to 0.280 under
   reply-plus-question.
+
+**Changed the cutoff to 0.5** rather than leaving it at 0.6. Both sit in the
+gap, but my five out-of-corpus questions (Mongolia, diesel engines, the World
+Cup, ibuprofen, Rust) are obviously unrelated to student life, and a question
+that was merely off-topic — something about a university, just not mine —
+would land nearer my corpus than any of them did. 0.5 leaves room for that
+case and still clears my worst real question (the library one, 0.383) by 0.12.
+Verified against all ten: 5/5 in-corpus questions pass the gate, 5/5
+out-of-corpus questions are refused.

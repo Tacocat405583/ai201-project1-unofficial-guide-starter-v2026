@@ -2,30 +2,11 @@
 
 **Nicolas** · Corpus: `advice_threads`
 
-> **This file is your submission.** Fill it in as you go — most sections get
-> written during the milestone that produces them, not at the end.
->
-> How the starter works, and every command you'll need, is in `RUNNING.md`.
-> Leave that file alone.
->
-> **Paste everything as text.** No screenshots, no video. A typed table gets
-> full credit; a picture of the same table gets none.
->
-> Delete these instruction blocks as you replace them. The `<!-- -->` comments
-> are notes to you and don't show up when the page renders — you can leave them
-> or remove them.
-
 ---
 
 # Unit 1
 
 ## What This Does
-
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
 
 I picked the `advice_threads` corpus because I thought it would be more
 challenging than `campus_life`. It's 23 question-and-answer threads where
@@ -188,18 +169,36 @@ one, 0.383) by 0.12, and all ten questions land on the correct side.
 
 ## How I Used AI
 
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
+I used Claude Code in VS Code throughout, and a separate Claude chat to check
+my work.
 
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
+**1. The chunker.** I had Claude Code replace the starter's fixed-window
+chunker with a paragraph split — cut on blank lines, one chunk per paragraph.
+It worked, and the result was worse than it looked: `advice_threads` went to
+98 chunks, and 23 of them were bare `THREAD:` question lines with no answer in
+them. `python app.py retrieve "is a parking permit worth it"` then ranked one
+of those empty question chunks first at 0.111, and parking reply 1 didn't make
+the top 5 at all. The fix I asked for next was mine: keep one chunk per reply,
+but paste the thread question on the front of every one, and never emit the
+question by itself. That's the chunker I shipped — 75 chunks, 131–280
+characters, all three parking replies back at #1–#3.
 
-     Milestone 5. -->
+**2. Judging my own chunks.** I pasted three finished chunks into a separate
+Claude chat and asked what question each could answer on its own, and what was
+missing if it couldn't. I deliberately included the sleep-thread chunk that
+holds my library-hours fact ("The library being open until 2am is a trap"),
+because I suspected it was the weakest one. The replies were a useful
+correction to my own optimism: not every chunk was as self-contained as I
+thought. I didn't change the chunker over it — I wrote the weak spots into my
+notes instead and left them to be measured in unit 2, since retrieval had
+already found that chunk at 0.383.
 
-**1.**
-
-**2.**
+One thing I did not use AI for, on purpose: picking the relevance cutoff.
+Claude recommended keeping the starter's 0.6, which sits at the midpoint of my
+measured gap. I went with 0.5 instead, because my five out-of-corpus questions
+are so obviously unrelated (diesel engines, the World Cup) that the midpoint
+flatters the gate — a question that was merely off-topic would land much
+closer than they did.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never

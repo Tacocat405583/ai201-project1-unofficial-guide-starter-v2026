@@ -323,12 +323,25 @@ Produced by `run_eval.py::check_out_of_scope`, which puts each question in
 `gate.py::check` at the 0.5 cutoff. Refused 5 of 5:
 
 ```
-| Out-of-scope question                                       | Best distance | Gate    |
-| What is the capital of Mongolia?                            | 0.893         | refused |
-| How do I change the oil in a diesel engine?                 | 0.896         | refused |
-| Who won the 1994 World Cup?                                 | 0.893         | refused |
-| What is the recommended dosage of ibuprofen for a headache? | 0.807         | refused |
-| How do I write a for loop in Rust?                          | 0.835         | refused |
+| Out-of-scope question | Best distance | Gate |
+|---|---|---|
+| What is the capital of Mongolia? | 0.893 | refused |
+| How do I change the oil in a diesel engine? | 0.896 | refused |
+| Who won the 1994 World Cup? | 0.893 | refused |
+| What is the recommended dosage of ibuprofen for a headache? | 0.807 | refused |
+| How do I write a for loop in Rust? | 0.835 | refused |
+```
+
+And the same measurement as `run_eval.py` printed it to the terminal:
+
+```
+Out-of-scope questions (the gate should refuse these):
+  refused  (best distance 0.893)  What is the capital of Mongolia?
+  refused  (best distance 0.896)  How do I change the oil in a diesel engine?
+  refused  (best distance 0.893)  Who won the 1994 World Cup?
+  refused  (best distance 0.807)  What is the recommended dosage of ibuprofen for a headache?
+  refused  (best distance 0.835)  How do I write a for loop in Rust?
+  -> gate refused 5 of 5
 ```
 
 In unit 1 I expected ibuprofen and the Rust question to be the near ones,

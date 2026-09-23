@@ -215,27 +215,183 @@ closer than they did.
 
 ## Run Log — Before
 
-<!-- Your five criteria, three runs each. `python run_eval.py --label before`
-     runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
-     writes it all into results/ for you. Targets come from criteria.md; the
-     verdict column is your call.
+Five questions, three runs each, response cache off. The raw file is
+`results/run_2026-09-23_0221_before.md`, produced by `run_eval.py::main` on
+2026-09-23 against the `advice_threads` corpus at top-k 5 and cutoff 0.5. That
+file is one row per question; this table is one row per criterion.
 
-     Criterion 3 is measured in one deterministic pass rather than three, so
-     the same number goes in all three run columns. That's correct, not lazy.
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Retrieved chunks contain the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunks name their own subject | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Answers keep the disagreement between replies | 2 of 2 | 0/2 | 1/2 | 0/2 | MISSED |
 
-     Milestone 1. -->
+Criteria 1, 3 and 4 carry the same number in all three columns because all
+three are measured by one deterministic pass. Retrieval is the same query
+against the same index every time, the gate is a comparison against a fixed
+number, and `app.py chunks -n 5` samples by stride rather than at random. There
+is one measurement for each and it goes in all three columns. Criterion 5 is
+the one that depends on what the model wrote, and it is the one that moves.
 
-| Criterion                              | Target | Run 1 | Run 2 | Run 3 | Verdict |
-| -------------------------------------- | ------ | ----- | ----- | ----- | ------- |
-| 1. Retrieved chunk contains the answer | 4 of 5 |       |       |       |         |
-| 2. Every answer names a source         | 5 of 5 |       |       |       |         |
-| 3. Gate stops out-of-corpus questions  | 4 of 5 |       |       |       |         |
-| 4.                                     |        |       |       |       |         |
-| 5.                                     |        |       |       |       |         |
+The 15 answers behind criteria 2 and 5 are three separate model calls per
+question — `run_eval.py::run_once` passes `cache=False` on purpose — so they
+are three real answers rather than one answer read three times.
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+### Criterion 1 — retrieved chunks contain the answer
+
+Measured by `scorer.py::retrieval_contains` over the results of
+`store.py::search`: does any of the five chunks that came back contain the
+`expects` string from `questions.py`? All five questions hit on all three runs.
+
+The hardest of the five was the locker question, where the answer lives in a
+reply that never says "cost" or "how much". This is `store.py::search` for
+"How much do commuter lockers cost?", printed by `app.py::cmd_retrieve`:
+
+```
+#   distance   source                           preview
+1   0.3492     thread_commuting.txt             THREAD: Commuting an hour each way — is it survivabl...
+2   0.6942     thread_bike_commute.txt          THREAD: Is a bike worth it for a 20 minute walk comm...
+3   0.6951     thread_bike_commute.txt          THREAD: Is a bike worth it for a 20 minute walk comm...
+4   0.7180     thread_laundry_timing.txt        THREAD: When is laundry actually free in the dorms? ...
+5   0.7237     thread_parking.txt               THREAD: Worth getting a parking permit? --- reply 3 ...
+
+Gate: best distance 0.349 is under the 0.5 cutoff
+```
+
+And the full text of hit 1 — the chunk that `expects: "20"` matched against:
+
+```
+THREAD: Commuting an hour each way — is it survivable?
+--- reply 2 (21 votes) ---
+The commuter lounge in the student centre has lockers you can rent for $20 a year and it changes the experience completely.
+```
+
+The gap between hit 1 at 0.349 and hit 2 at 0.694 is the thread question doing
+the work. `chunker.py::split_documents` attaches it to every reply, so the
+locker reply carries the word "commuting" even though the reply itself is about
+lockers.
+
+### Criterion 2 — every answer names a source
+
+Measured by reading all 15 answer texts in the transcript section of
+`results/run_2026-09-23_0221_before.md`, written by `run_eval.py::write_report`.
+Every one of the 15 names a `.txt` file inside the answer itself, not only in
+the "Sources retrieved" line that `app.py` prints separately. 5 of 5 on each of
+the three runs.
+
+Three of them, produced by `generate.py::answer_from_chunks`:
+
+```
+According to `thread_meal_plan_tier.txt`, you can only change your meal plan once and only in the first ten days.
+```
+
+```
+The counselling sleep workshop is four sessions, according to `thread_sleep_schedule.txt`.
+```
+
+```
+Based on the documents, the library is open until 2 am (*thread_sleep_schedule.txt*).
+```
+
+They differ in how they phrase the citation — backticks, a trailing "according
+to", italics in parentheses — but all three name the file.
+
+### Criterion 3 — the gate stops out-of-corpus questions
+
+Produced by `run_eval.py::check_out_of_scope`, which puts each question in
+`questions.py::OUT_OF_SCOPE` through `store.py::search` and then
+`gate.py::check` at the 0.5 cutoff. Refused 5 of 5:
+
+```
+| Out-of-scope question                                       | Best distance | Gate    |
+| What is the capital of Mongolia?                            | 0.893         | refused |
+| How do I change the oil in a diesel engine?                 | 0.896         | refused |
+| Who won the 1994 World Cup?                                 | 0.893         | refused |
+| What is the recommended dosage of ibuprofen for a headache? | 0.807         | refused |
+| How do I write a for loop in Rust?                          | 0.835         | refused |
+```
+
+In unit 1 I expected ibuprofen and the Rust question to be the near ones,
+because a headache sits close to my sleep and counselling replies and Rust sits
+close to the laptop-for-CS thread. They were the two closest — 0.807 and 0.835
+— but both are more than 0.3 above the cutoff, nowhere near crossing it.
+
+### Criterion 4 — chunks name their own subject
+
+Produced by `app.py::cmd_chunks` over `chunker.py::split_documents`, which
+prints 5 of the 75 chunks by stride across the corpus. The test is whether a
+reader can tell what thread question the chunk answers from the chunk alone.
+All 5 do, because every chunk opens with its `THREAD:` line:
+
+```
+Chunk 1  |  source: thread_bike_commute.txt#0  |  produced by: chunker.py::split_documents
+THREAD: Is a bike worth it for a 20 minute walk commute?
+--- reply 1 (14 votes) ---
+Yeah. Cuts an 18 minute walk to about 6. The thing nobody mentions is storage — covered bike parking exists at three buildings and is full by 9am at all three.
+
+Chunk 2  |  source: thread_first_gen.txt#1  |  produced by: chunker.py::split_documents
+THREAD: Anything specific for first-generation students?
+--- reply 2 (41 votes) ---
+The thing I'd say: the unwritten rules are the hard part, not the coursework. Ask about the unwritten rules explicitly. People are happy to explain them and nobody volunteers them.
+
+Chunk 3  |  source: thread_laptop_specs.txt#2  |  produced by: chunker.py::split_documents
+THREAD: How much laptop do I actually need for CS courses?
+--- reply 3 (12 votes) ---
+I did two years on an 8GB machine and it was fine until the last project, at which point it very much wasn't. 16 is the answer.
+
+Chunk 4  |  source: thread_parking.txt#1  |  produced by: chunker.py::split_documents
+THREAD: Worth getting a parking permit?
+--- reply 2 (21 votes) ---
+Street parking on Verrill is legal and free and unmarked, which is why half the upper years do it.
+
+Chunk 5  |  source: thread_sleep_schedule.txt#1  |  produced by: chunker.py::split_documents
+THREAD: Everyone says fix your sleep. Does it actually matter?
+--- reply 2 (37 votes) ---
+The library being open until 2am is a trap. It's a resource, not a schedule.
+```
+
+Chunk 5 is the one I looked at hardest. "The library being open until 2am is a
+trap" would be unreadable on its own — a trap for what? — but with the thread
+question attached you can tell it is answering whether fixing your sleep
+matters. That is the test as I wrote it, so it counts.
+
+### Criterion 5 — answers keep the disagreement between replies
+
+Measured by reading the answers to the two questions whose threads contain
+replies that qualify each other, from the transcript in
+`results/run_2026-09-23_0221_before.md`. The test is whether the answer names
+the condition the replies disagree about.
+
+Laundry, where reply 1 says every building and reply 2 says it depends which
+building you are in. Three answers from `generate.py::answer_from_chunks`, same
+question, same chunks, best distance 0.204 every time:
+
+```
+run 1: According to `thread_laundry_timing.txt`, laundry is free on Tuesday and Wednesday mornings in every building.
+
+run 2: Dorm laundry is free on Tuesday and Wednesday mornings in every building (from thread_laundry_timing.txt). However, one reply notes that availability heavily depends on your building (from thread_laundry_timing.txt).
+
+run 3: According to `thread_laundry_timing.txt`, dorm laundry is free on Tuesday and Wednesday mornings in every building.
+```
+
+Run 2 names the building condition. Runs 1 and 3 state "in every building" as
+settled fact and drop it entirely.
+
+Meal plan, where reply 1 says get the middle tier unless your building has a
+kitchen and reply 2 says the highest tier almost never makes sense:
+
+```
+run 1: According to `thread_meal_plan_tier.txt`, you can only change your meal plan once and only in the first ten days.
+
+run 2: According to `thread_meal_plan_tier.txt`, you can only change your meal plan once and only during the first ten days.
+
+run 3: According to `thread_meal_plan_tier.txt`, you can only change your meal plan once and only in the first ten days.
+```
+
+None of the three name the kitchen condition, so this half failed on all three
+runs. Scored together: 0 of 2 on run 1, 1 of 2 on run 2, 0 of 2 on run 3.
 
 ## Verdicts
 

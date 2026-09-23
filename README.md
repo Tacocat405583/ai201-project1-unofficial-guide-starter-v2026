@@ -228,6 +228,24 @@ file is one row per question; this table is one row per criterion.
 | 4. Chunks name their own subject | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 | 5. Answers keep the disagreement between replies | 2 of 2 | 0/2 | 1/2 | 0/2 | MISSED |
 
+One number in the raw file is not in this table, and it is the one that looks
+like it contradicts row 1. `results/run_2026-09-23_0221_before.md` scores each
+question with `scorer.py::judge`, which is a different measurement from any of
+my five criteria — it tests the **answer text**, where criterion 1 tests the
+**retrieved chunks**. Recorded here so both numbers are visible:
+
+| Not a criterion — the scorer's answer-text result | Target | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|---|
+| `scorer.py::judge` — answer contains the `expects` string | none set | 4/5 | 5/5 | 4/5 |
+
+The question that moves it is "How late is the library open?", and it is not a
+wrong answer. The system said "2 am" on runs 1 and 3 and "2am" on run 2, while
+`questions.py` sets `expects` to `2am` and my scoring rule is a literal
+lowercase substring test. Runs 1 and 3 are marked fail over a space character.
+The chunk containing "2am" was retrieved on all three runs, which is why
+criterion 1 is 5/5 and this line is 4/5 — the two disagree because they are
+asking different questions, not because one of them is wrong.
+
 Criteria 1, 3 and 4 carry the same number in all three columns because all
 three are measured by one deterministic pass. Retrieval is the same query
 against the same index every time, the gate is a comparison against a fixed
@@ -395,22 +413,102 @@ runs. Scored together: 0 of 2 on run 1, 1 of 2 on run 2, 0 of 2 on run 3.
 
 ## Verdicts
 
-<!-- MET or MISSED for each of the five, against the target you wrote last
-     unit — not a new one. Plus a sentence on how you decided. That sentence
-     matters most where it was close.
-
-     If your target said 4 of 5 and your runs came out 4, 3, 4, that's a MISS.
-     The target has to hold, not show up occasionally.
-
-     Milestone 2. -->
-
 | #   | Criterion | Verdict | How I decided |
 | --- | --------- | ------- | ------------- |
-| 1   |           |         |               |
-| 2   |           |         |               |
-| 3   |           |         |               |
-| 4   |           |         |               |
-| 5   |           |         |               |
+| 1   | Retrieved chunks contain the answer | MET | Target was 4 of 5. All 5 questions had the `expects` string sitting in a retrieved chunk, on all three runs. Not close. |
+| 2   | Every answer names a source | MET | Target was 5 of 5. All 15 answers name a `.txt` file inside the answer text itself, so 5 of 5 on each run. Not close. |
+| 3   | Gate stops out-of-corpus questions | MET | Target was 4 of 5. The gate refused 5 of 5, and the nearest miss was 0.807 against a 0.5 cutoff — more than 0.3 of margin. Not close. |
+| 4   | Chunks name their own subject | MET | Target was 4 of 5. All 5 sampled chunks open with their `THREAD:` line, so all 5 name their subject. This is the one I had to argue myself out of scoring generously — see below. |
+| 5   | Answers keep the disagreement between replies | MISSED | Target was both of 2. The best single run was 1 of 2, and the other two runs were 0 of 2. One run out of three getting half of it is not "both of 2". |
+
+### 1 — the 5/5 against the scorer's 4/5
+
+The run log above carries both numbers: criterion 1 at 5/5, and
+`scorer.py::judge` at 4/5, 5/5, 4/5. I decided criterion 1 on the 5/5 because
+that is the measurement my criterion names — "the retrieved chunks include one
+that contains the answer" is a question about retrieval, and
+`scorer.py::retrieval_contains` is the function that answers it. The chunk
+holding "2am" came back on all three runs for all five questions.
+
+The 4/5 is `judge` testing the answer text instead, and it fails runs 1 and 3
+of the library question over the space in "2 am". All three of those answers
+are correct.
+
+I am leaving the substring rule exactly as `questions.py` states it rather than
+quietly widening it to catch "2 am". None of my five criteria depend on
+`judge`, so loosening it would not move a single verdict — it would only make
+the report look tidier. The mismatch is worth more to me visible than patched,
+because it is the clearest thing this test found about my own measurement: I
+wrote a rule that marks a right answer wrong, and I did not find that out until
+I ran it.
+
+### 4 — the one I nearly scored generously
+
+In unit 1 I predicted this criterion would MISS, and wrote in `criteria.md`
+that "with the paragraph split I have right now, most sampled chunks are
+replies with no subject". Then I changed the chunker later in unit 1 to split
+by reply with the thread question attached, and never re-checked the
+prediction. So the MET here is real, but it is the chunker change earning it,
+not the criterion having been hard.
+
+The chunk I looked at longest was chunk 5:
+
+```
+THREAD: Everyone says fix your sleep. Does it actually matter?
+--- reply 2 (37 votes) ---
+The library being open until 2am is a trap. It's a resource, not a schedule.
+```
+
+On its own the reply names nothing — a trap for what? It only names its
+subject because `chunker.py::split_documents` bolts the `THREAD:` line on. I
+considered scoring it a fail on the grounds that the chunk is not really
+self-describing, the header is. I scored it MET because my criterion says "from
+the chunk's text alone", and the header is part of the chunk's text. That is
+the test I wrote, and rewriting it now to make it harder would be as dishonest
+as rewriting it to make it easier.
+
+### 5 — how I scored the run that half-worked
+
+Run 2's laundry answer is the only one of six that mentions the condition:
+
+```
+Dorm laundry is free on Tuesday and Wednesday mornings in every building
+(from thread_laundry_timing.txt). However, one reply notes that availability
+heavily depends on your building (from thread_laundry_timing.txt).
+```
+
+I scored this a pass, and it is arguable. It reports the building condition as
+something "one reply notes" rather than qualifying its own "in every building"
+claim, so a reader could still walk away believing the first sentence. Scored
+strictly it is a fail, which would make criterion 5 0 of 2 on all three runs.
+
+I gave it the pass because my criterion asks whether the answer "names the
+condition the replies disagree about", and it does name it. The verdict is
+MISSED either way, so this reading does not rescue anything — it only changes
+whether the before number is 0/1/0 or 0/0/0.
+
+### Were these targets set low?
+
+Four of five MET on the first run, three of them by a wide margin. Some of that
+is the criteria being safe rather than the system being good, and I would
+rather say so than take the win:
+
+- **Criterion 2** was close to unmissable. I said as much when I wrote it —
+  every chunk carries its file name and the prompt asks for a citation. The one
+  failure mode I named was the gate refusing one of my own questions, and my
+  own questions come back at 0.204 to 0.383 against a 0.5 cutoff, so that was
+  never going to happen.
+- **Criterion 3** had 0.3 of margin on the nearest out-of-scope question. My
+  five out-of-corpus questions are about Mongolia, diesel engines, the World
+  Cup, ibuprofen and Rust — none of them is a genuinely hard case for a corpus
+  of student-advice threads. A question like "how do I appeal a parking ticket"
+  would be the real test, and I did not write one.
+- **Criterion 1** is measured against a `expects` string of one or two words.
+  "20" appearing somewhere in five chunks is a low bar for "contains the
+  answer".
+
+Criterion 5 is the only one that asked anything of the system it could not
+already do, and it is the one that failed.
 
 ## Diagnoses
 
